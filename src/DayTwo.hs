@@ -16,17 +16,19 @@ data Command
   | Unknown
   deriving (Show)
 
-data Position = Position { depth :: Int, horizontal :: Int } deriving (Show)
+data Position = Position { depth :: Int, horizontal :: Int, aim :: Int } deriving (Show)
 
 initialPosition :: Position
-initialPosition = Position 0 0
+initialPosition = Position 0 0 0
 
 foldCommand :: Position -> Command -> Position
 foldCommand p cmd =
   case cmd of
-    Forward x -> p { horizontal = x + horizontal p }
-    Down x -> p { depth = x + depth p }
-    Up x -> p { depth = depth p - x }
+    Forward x -> p { horizontal = x + horizontal p
+                   , depth = depth p + (aim p * x)
+                   }
+    Down x -> p { aim = aim p + x}
+    Up x -> p { aim = aim p - x }
     Unknown -> p
 
 parseCommand :: String -> Command

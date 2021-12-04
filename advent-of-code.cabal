@@ -28,10 +28,10 @@ extra-source-files:
     README.md
 
 library
-    exposed-modules:  MyLib,DayOne
+    exposed-modules:  MyLib
 
     -- Modules included in this library but not exported.
-    -- other-modules:
+    other-modules: DayOne, DayTwo
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:

@@ -9,7 +9,7 @@ main input = do
     let drawsStrings : _ : boardLines = lines input
     let draws = map read $ map T.unpack $ T.splitOn (T.pack ",") (T.pack drawsStrings)
     let boards = parseBoards boardLines []
-    let (markedBoards, draw : draws') = markUntilDone (boards, draws)
+    let (markedBoards, draw : draws') = findFirstWin (boards, draws)
     putStrLn $ prettyBoards markedBoards
     let winningBoard = head $ filter boardIsWon markedBoards
     putStrLn $ "winning board = \n" ++ prettyBoard winningBoard ++ "\n winning draw = " ++ show draw
@@ -18,6 +18,13 @@ main input = do
     let final = score * draw
     putStrLn $ "final score = " ++ show final
 
+    let (lastWinBoard : _, lastWinDraw : _) = findFirstWin $ findLastWin (boards, draws)
+    putStrLn $ "last winning board = \n" ++ prettyBoard lastWinBoard ++ "\n last winning draw = " ++ show lastWinDraw
+    let lastWinScore = boardScore lastWinBoard
+    let lastWinFinal = lastWinScore * lastWinDraw
+    putStrLn $ "board score = " ++ show lastWinScore ++ ", last win final = " ++ show lastWinFinal
+    
+
 type Board = [[(Int, Bool)]]
 
 boardScore :: Board -> Int
@@ -25,8 +32,17 @@ boardScore board = foldl (+) 0 (map fst unmarkedCells)
     where
         unmarkedCells = filter (not . snd) $ concat board
 
-markUntilDone :: ([Board], [Int]) -> ([Board], [Int])
-markUntilDone (boards, draws) = if done then (boards', draw : draws') else markUntilDone (boards', draws')
+findLastWin :: ([Board], [Int]) -> ([Board], [Int])
+findLastWin (boards, draws) = if done then (losers, draw : draws') else findLastWin (boards', draws')
+    where
+        draw = head draws
+        boards' = markBoards boards draw
+        draws' = tail draws
+        losers = filter (not . boardIsWon) boards'
+        done = length losers == 1 || length draws' == 0
+
+findFirstWin :: ([Board], [Int]) -> ([Board], [Int])
+findFirstWin (boards, draws) = if done then (boards', draw : draws') else findFirstWin (boards', draws')
     where
         draw = head draws
         boards' = markBoards boards draw

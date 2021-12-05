@@ -1,4 +1,4 @@
-module DayThree (main) where
+module DayThree (main, transpose) where
 
 main :: String -> IO ()
 main input = do

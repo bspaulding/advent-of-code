@@ -3,6 +3,7 @@ module MyLib (main) where
 import qualified DayOne
 import qualified DayTwo
 import qualified DayThree
+import qualified DayFour
 
 main :: String -> String -> IO ()
 main day input = do
@@ -10,5 +11,6 @@ main day input = do
     "one" -> DayOne.main input
     "two" -> DayTwo.main input
     "three" -> DayThree.main input
+    "four" -> DayFour.main input
     _ -> putStrLn $ "Unknown day '" ++ day ++ " "
 

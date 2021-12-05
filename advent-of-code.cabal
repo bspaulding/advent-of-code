@@ -31,11 +31,12 @@ library
     exposed-modules:  MyLib
 
     -- Modules included in this library but not exported.
-    other-modules: DayOne, DayTwo, DayThree
+    other-modules: DayOne, DayTwo, DayThree, DayFour
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>=4.14.3.0
+    build-depends:    base ^>=4.14.3.0,
+                      text >=1.2.4.1
     hs-source-dirs:   src
     default-language: Haskell2010
 

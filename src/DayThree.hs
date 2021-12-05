@@ -16,6 +16,8 @@ main input = do
   putStrLn $ show epsilon
   let power = gamma * epsilon
   putStrLn $ show power
+  let (oxygenBit, co2Bit) = calcRatingBits (head cols)
+  putStrLn $ show (oxygenBit, co2Bit)
 
 interpBinary :: [Int] -> Int
 interpBinary bits' = x
@@ -23,6 +25,15 @@ interpBinary bits' = x
         bitsI = zip bits [0..]
         pows = map (\(b, i) -> b * (2 ^ i)) bitsI
         x = foldl (+) 0 pows
+
+calcRatingBits :: [Int] -> (Int, Int)
+calcRatingBits xs = (oxygen, co2)
+  where zeros = length $ filter (== 0) xs
+        ones = length $ filter (== 1) xs
+        oxygen = if zeros == ones then 1
+                 else if zeros > ones then 0 else 1
+        co2 = if zeros == ones then 0
+                 else if zeros > ones then 1 else 0
 
 calcGammaBit :: [Int] -> Int
 calcGammaBit xs = gamma

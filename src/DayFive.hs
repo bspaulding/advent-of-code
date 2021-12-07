@@ -18,9 +18,7 @@ main :: String -> IO ()
 main input = do
     let ventLines = map parseVent $ lines input
     putStrLn $ "vent lines parsed = " ++ show ventLines
-    let nonDiagonals = filter (\l -> isHorizontal l || isVertical l) ventLines
-    putStrLn $ "non-diagonals = " ++ show nonDiagonals
-    let ventMap = buildVentMap nonDiagonals
+    let ventMap = buildVentMap ventLines
     putStrLn $ "ventMap = \n" ++ show ventMap ++ "\n" ++ prettyVentMap ventMap
     let dangerPoints = Map.filter (> 1) ventMap
     putStrLn $ "dangerPoints = \n" ++ show dangerPoints ++ "\nThere are " ++ show (length dangerPoints) ++ " danger points."

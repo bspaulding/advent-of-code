@@ -16,7 +16,11 @@ calcCost :: [Int] -> Int -> Int
 calcCost positions targetPosition =
     sum costs
     where 
-        costs = [abs (targetPosition - position) | position <- positions]
+        costs = [factorial $ abs (targetPosition - position) | position <- positions]
+
+factorial :: Int -> Int
+factorial 0 = 0
+factorial x = x + factorial (x - 1)
 
 maxInList :: Ord a => [a] -> a
 maxInList [a] =  a

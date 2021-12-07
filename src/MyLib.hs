@@ -5,6 +5,7 @@ import qualified DayTwo
 import qualified DayThree
 import qualified DayFour
 import qualified DayFive
+import qualified DaySix
 
 main :: String -> String -> IO ()
 main day input = do
@@ -14,5 +15,6 @@ main day input = do
     "three" -> DayThree.main input
     "four" -> DayFour.main input
     "five" -> DayFive.main input
+    "six" -> DaySix.main input
     _ -> putStrLn $ "Unknown day '" ++ day ++ " "
 

@@ -1,12 +1,13 @@
 module MyLib (main) where
 
-import qualified DayOne
-import qualified DayTwo
-import qualified DayThree
-import qualified DayFour
+import qualified DayEight
 import qualified DayFive
-import qualified DaySix
+import qualified DayFour
+import qualified DayOne
 import qualified DaySeven
+import qualified DaySix
+import qualified DayThree
+import qualified DayTwo
 
 main :: String -> String -> IO ()
 main day input = do
@@ -18,5 +19,5 @@ main day input = do
     "five" -> DayFive.main input
     "six" -> DaySix.main input
     "seven" -> DaySeven.main input
+    "eight" -> DayEight.main input
     _ -> putStrLn $ "Unknown day '" ++ day ++ " "
-

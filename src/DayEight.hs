@@ -31,37 +31,34 @@ decodeDisplay (patterns, outputs) = sum $ map (\(x, i) -> x * 10 ^ i) (zip (reve
 sortByLength :: [[a]] -> [[a]]
 sortByLength = L.sortBy (\as bs -> if length as > length bs then GT else LT)
 
-diff :: Ord a => [a] -> [a] -> [a]
-diff xs ys = Set.toList $ Set.difference xs' ys'
-  where
-    xs' = Set.fromList xs
-    ys' = Set.fromList ys
-
 buildSegmentMap :: [String] -> Map.Map Char Char
 buildSegmentMap patterns = Map.fromList [(a, 'a'), (b, 'b'), (c, 'c'), (d, 'd'), (e, 'e'), (f, 'f'), (g, 'g')]
   where
     [p2, p3, p4, p51, p52, p53, p61, p62, p63, p7] = sortByLength patterns
 
     -- a is 7 - 1
-    a = head $ diff p3 p2
+    a = chomp (== 1) $ freqs (p3 ++ p2)
 
     -- d is the common segment of 2, 3, 4, 5
-    d = (fst . head . Map.toList) $ Map.filter (== 4) $ freqs (p4 ++ p51 ++ p52 ++ p53)
+    d = chomp (== 4) $ freqs (p4 ++ p51 ++ p52 ++ p53)
 
     -- e is the uncommon segment of 2,3,4,5
-    e = (fst . head . Map.toList) $ Map.filter (== 1) $ freqs (p4 ++ p51 ++ p52 ++ p53)
+    e = chomp (== 1) $ freqs (p4 ++ p51 ++ p52 ++ p53)
 
     -- c is the uncommon segment of 0,6,9,d,e
-    c = (fst . head . Map.toList) $ Map.filter (== 2) $ freqs (p61 ++ p62 ++ p63 ++ [d, e])
+    c = chomp (== 2) $ freqs (p61 ++ p62 ++ p63 ++ [d, e])
 
     -- f is 1 - c
-    f = (fst . head . Map.toList) $ Map.filter (== 1) $ freqs (p2 ++ [c])
+    f = chomp (== 1) $ freqs (p2 ++ [c])
 
     -- b is 4 - 1 - d
-    b = (fst . head . Map.toList) $ Map.filter (== 1) $ freqs (p2 ++ p4 ++ [d])
+    b = chomp (== 1) $ freqs (p2 ++ p4 ++ [d])
 
     -- g is left over
-    g = head $ diff p7 [a, b, c, d, e, f]
+    g = chomp (== 1) $ freqs (p7 ++ [a, b, c, d, e, f])
+
+chomp :: (v -> Bool) -> Map.Map k v -> k
+chomp f m = (fst . head . Map.toList) $ Map.filter f m
 
 freqs :: Ord a => [a] -> Map.Map a Int
 freqs = foldl getAndInc Map.empty

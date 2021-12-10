@@ -1,23 +1,35 @@
 module DayNine (main) where
 
 import qualified Data.Text as Text
+import System.Console.ANSI.Codes
 
 main :: String -> IO ()
 main input = do
   let heightMap = parseHeightMap input
-  putStrLn $ prettyMap heightMap
+  putStrLn $ prettyMap heightMap [] ++ "\n"
   let lows = lowPoints heightMap
-  putStrLn $ "lows = " ++ show lows
+  putStrLn $ prettyMap heightMap lows ++ "\n"
+
   let lowValues = map (getMapValue heightMap) lows
-  print (zip lowValues lows)
   let riskLevel = sum $ map (+ 1) lowValues
   putStrLn $ "risk level = " ++ show riskLevel
+
+  let bs = basins heightMap
+  putStrLn $ "basins = " ++ show (basins heightMap)
+
+  putStrLn $ join "\n" $ map (prettyMap heightMap) bs
+
+basins :: [[Int]] -> [[(Int, Int)]]
+basins heightMap = []
 
 getMapValue :: [[Int]] -> (Int, Int) -> Int
 getMapValue heightMap (y, x) = (heightMap !! y) !! x
 
 lowPoints :: [[Int]] -> [(Int, Int)]
-lowPoints heightMap = filter (isLocalMinimum heightMap) coords
+lowPoints heightMap = filter (isLocalMinimum heightMap) (coordsIn heightMap)
+
+coordsIn :: [[Int]] -> [(Int, Int)]
+coordsIn heightMap = coords
   where
     height = length heightMap
     width = (length . head) heightMap
@@ -38,11 +50,19 @@ neighborCoordsOf heightMap (y, x) = filter (inBounds height width) [(y - 1, x), 
 inBounds :: Int -> Int -> (Int, Int) -> Bool
 inBounds height width (y, x) = y >= 0 && x >= 0 && y < height && x < width
 
-prettyMap :: [[Int]] -> String
-prettyMap m = Text.unpack m'
+prettyMap :: [[Int]] -> [(Int, Int)] -> String
+prettyMap m psh = Text.unpack m'
   where
-    m' = Text.intercalate (Text.pack "\n") mapLines
-    mapLines = map (Text.intercalate (Text.pack "") . map (Text.pack . show)) m
+    m' = Text.intercalate (Text.pack "\n") (map Text.pack mapLines)
+    mapLines = map (join "") $ chunks ((length . head) m) $ map displayPoint (coordsIn m)
+
+    displayPoint :: (Int, Int) -> String
+    displayPoint p = highlight ++ show (getMapValue m p) ++ setSGRCode []
+      where
+        highlight = if p `elem` psh then setSGRCode [SetColor Foreground Vivid Red] else ""
+
+join :: String -> [String] -> String
+join sep xs = Text.unpack $ Text.intercalate (Text.pack sep) (map Text.pack xs)
 
 parseHeightMap :: String -> [[Int]]
 parseHeightMap input =

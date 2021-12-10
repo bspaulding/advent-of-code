@@ -1,14 +1,15 @@
 module DayNine (main) where
 
+import qualified Data.List as List
 import qualified Data.Text as Text
 import System.Console.ANSI.Codes
 
 main :: String -> IO ()
 main input = do
   let heightMap = parseHeightMap input
-  putStrLn $ prettyMap heightMap [] ++ "\n"
+  --   putStrLn $ prettyMap heightMap [] ++ "\n"
   let lows = lowPoints heightMap
-  putStrLn $ prettyMap heightMap lows ++ "\n"
+  --   putStrLn $ prettyMap heightMap lows ++ "\n"
 
   let lowValues = map (getMapValue heightMap) lows
   let riskLevel = sum $ map (+ 1) lowValues
@@ -16,11 +17,36 @@ main input = do
 
   let bs = basins heightMap
   putStrLn $ "basins = " ++ show (basins heightMap)
+  --   putStrLn $ join "\n\n" $ map (prettyMap heightMap) bs
 
-  putStrLn $ join "\n" $ map (prettyMap heightMap) bs
+  let largestBasinSizes = reverse $ List.sort $ map length bs
+  putStrLn $ "largestBasinSizes = " ++ show largestBasinSizes ++ ", product = " ++ show (product $ take 3 largestBasinSizes)
 
 basins :: [[Int]] -> [[(Int, Int)]]
-basins heightMap = []
+basins heightMap = map (\p -> basinFrom heightMap [] [p]) (lowPoints heightMap)
+
+basinFrom :: [[Int]] -> [(Int, Int)] -> [(Int, Int)] -> [(Int, Int)]
+basinFrom heightMap visited [] = visited
+basinFrom heightMap visited rest' =
+  basinFrom heightMap newVisited (rest ++ newNeighbors)
+  where
+    rest = tail rest'
+    p = head rest'
+
+    newVisited :: [(Int, Int)]
+    newVisited = if p `elem` visited then visited else visited ++ [p]
+
+    newNext :: [(Int, Int)]
+    newNext = rest ++ newNeighbors
+
+    newNeighbors :: [(Int, Int)]
+    newNeighbors = filter (`notElem` visited) pNeighbors
+
+    pNeighbors :: [(Int, Int)]
+    pNeighbors = nonNineNeighbors heightMap p
+
+nonNineNeighbors :: [[Int]] -> (Int, Int) -> [(Int, Int)]
+nonNineNeighbors heightMap p = filter (\p -> getMapValue heightMap p /= 9) (neighborCoordsOf heightMap p)
 
 getMapValue :: [[Int]] -> (Int, Int) -> Int
 getMapValue heightMap (y, x) = (heightMap !! y) !! x

@@ -1,24 +1,62 @@
 module DayTen (main) where
 
+import qualified Data.Either as Either
+import qualified Data.List as List
 import qualified Data.Map.Strict as Map
 import qualified Data.Maybe as Maybe
 import qualified Data.Text as Text
+import qualified Data.Tuple as Tuple
 
 main :: String -> IO ()
 main input = do
-  let subsytems = lines input
-  let results = map (\s -> isCorrupted s []) subsytems
-  putStrLn $ join "\n" $ map show (zip subsytems results)
+  let subsystems = lines input
+  let results = map (`parse` []) subsystems
+  putStrLn $ join "\n" $ zipWith (curry show) subsystems results
 
-  let score = sum (map charScore (Maybe.catMaybes results))
+  let score = sum (map charScore (Either.lefts results))
   putStrLn $ "score = " ++ show score
 
-isCorrupted :: String -> [Char] -> Maybe Char
-isCorrupted [] stack = Nothing -- if null stack then Nothing else Just '!'
-isCorrupted chars stack =
+  let uncorruptedSystems = filter (Either.isRight . snd) (zip subsystems results)
+  putStrLn $ "valid systems = \n" ++ join "\n" (map (show . fst) uncorruptedSystems)
+
+  let autocompleted = map (\(openings, Right stack) -> autocomplete openings stack) uncorruptedSystems
+  putStrLn $ "autocompleted = \n" ++ join "\n" (map show autocompleted)
+
+  let completions = map completion $ Either.rights $ map snd uncorruptedSystems
+  let completionScores = map scoreCompletion completions
+  putStrLn $ "completions = \n" ++ join "\n" (map show (zip completions completionScores))
+
+  let middleScore = head $ drop (length completionScores `div` 2) $ List.sort completionScores
+  putStrLn $ "middleScore = " ++ show middleScore
+
+scoreCompletion :: String -> Int
+scoreCompletion = foldl f 0
+  where
+    f acc c = acc * 5 + score c
+    score c = case c of
+      ')' -> 1
+      ']' -> 2
+      '}' -> 3
+      '>' -> 4
+      _ -> 0
+
+completion :: String -> String
+completion = concatMap getCloseTag
+  where
+    getCloseTag c =
+      case Map.lookup c openingTags of
+        Nothing -> ""
+        Just c -> [c]
+
+autocomplete :: String -> String -> String
+autocomplete openings stack = openings ++ completion stack
+
+parse :: String -> [Char] -> Either Char [Char]
+parse [] stack = Right stack
+parse chars stack =
   case newStack of
-    Right newStack -> isCorrupted (tail chars) newStack
-    Left illegal -> Just illegal
+    Right newStack -> parse (tail chars) newStack
+    Left illegal -> Left illegal
   where
     c :: Char
     c = head chars
@@ -40,6 +78,9 @@ isCorrupted chars stack =
 
 closingTags :: Map.Map Char Char
 closingTags = Map.fromList [(')', '('), (']', '['), ('}', '{'), ('>', '<')]
+
+openingTags :: Map.Map Char Char
+openingTags = Map.fromList $ map Tuple.swap $ Map.toList closingTags
 
 charScore :: Char -> Int
 charScore c =

@@ -14,6 +14,18 @@ main input = do
   let (g100, f100) = runSteps 100 grid
   putStrLn $ "step 100 = \n" ++ join "\n" (map show g100) ++ "\nthere were " ++ show f100 ++ " flashes after 100 steps."
 
+  let sAll = findFirstFullFlash grid 0
+  putStrLn $ "All octopuses flash on step " ++ show sAll
+
+findFirstFullFlash :: Grid -> Int -> Int
+findFirstFullFlash g s = if allZeros then s' else findFirstFullFlash g' s'
+  where
+    s' = s + 1
+    g' = step g
+    allZeros = lg == lz
+    lz = length $ concatMap (filter (== 0)) g'
+    lg = sum (map length g')
+
 runSteps :: Int -> Grid -> (Grid, Int)
 runSteps n g = foldl f (g, 0) [0 .. (n - 1)]
   where

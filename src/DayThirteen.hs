@@ -20,19 +20,11 @@ main input =
     Right (points, folds) -> do
       putStrLn $ "points = " ++ show points
       putStrLn $ "folds = " ++ show folds
-      --   putStrLn $ drawMap points
-      let firstFold = foldPaper (head folds) points
-      putStrLn $ "first fold = " ++ show firstFold
-      --   putStrLn $ drawMap firstFold
-      putStrLn $ show (length firstFold) ++ " dots are visible after the first fold."
+      let folded = foldl foldPaper points folds
+      putStrLn $ drawMap folded
 
---   let secondFold = foldPaper (folds !! 1) firstFold
---   putStrLn $ "second fold = " ++ show secondFold
---   putStrLn $ drawMap secondFold
---   putStrLn $ show (length secondFold) ++ " dots are visible after the second fold."
-
-foldPaper :: Point -> [Point] -> [Point]
-foldPaper p ps = Set.toList $ Set.fromList $ map (foldPoint p) ps
+foldPaper :: [Point] -> Point -> [Point]
+foldPaper ps p = Set.toList $ Set.fromList $ map (foldPoint p) ps
 
 foldPoint :: Point -> Point -> Point
 foldPoint (yf, 0) (y, x) =

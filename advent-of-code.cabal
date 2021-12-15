@@ -31,7 +31,7 @@ library
     exposed-modules:  MyLib
 
     -- Modules included in this library but not exported.
-    other-modules: Utilities, DayOne, DayTwo, DayThree, DayFour, DayFive, DaySix, DaySeven, DayEight, DayNine, DayTen, DayEleven, DayTwelve
+    other-modules: Utilities, DayOne, DayTwo, DayThree, DayFour, DayFive, DaySix, DaySeven, DayEight, DayNine, DayTen, DayEleven, DayTwelve, DayThirteen
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -39,6 +39,7 @@ library
                       text >=1.2.4.1,
                       containers >= 0.6.5.1,
                       ansi-terminal >= 0.11.1,
+                      parsec >= 3.1.15.0,
     hs-source-dirs:   src
     default-language: Haskell2010
 

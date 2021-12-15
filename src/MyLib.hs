@@ -9,6 +9,7 @@ import qualified DayOne
 import qualified DaySeven
 import qualified DaySix
 import qualified DayTen
+import qualified DayThirteen
 import qualified DayThree
 import qualified DayTwelve
 import qualified DayTwo
@@ -28,4 +29,5 @@ main day input = do
     "ten" -> DayTen.main input
     "eleven" -> DayEleven.main input
     "twelve" -> DayTwelve.main input
+    "thirteen" -> DayThirteen.main input
     _ -> putStrLn $ "Unknown day '" ++ day ++ " "

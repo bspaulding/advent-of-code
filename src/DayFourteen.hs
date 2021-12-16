@@ -12,13 +12,20 @@ main input = case parseInput input of
   Left err -> print err
   Right conf -> do
     print conf
+    doStep conf 1
+    doStep conf 2
+    doStep conf 3
+    doStep conf 4
     doStep conf 10
 
 doStep :: Config -> Int -> IO ()
 doStep conf n = do
   let rules = insertionRules conf
-  let stepN = steps rules (polymerTemplate conf) n
-  let counts = Map.toList $ freqs stepN
+  let stepN = steps rules (pairs $ polymerTemplate conf) n
+  print stepN
+  let stepNCombined = combined stepN
+  putStrLn $ stepNCombined
+  let counts = Map.toList $ freqs stepNCombined
   let ((cmax, xmax), (cmin, xmin)) = (maximumBy (comparing snd) counts, minimumBy (comparing snd) counts)
   print ((cmax, xmax), (cmin, xmin))
   let diff = xmax - xmin
@@ -29,20 +36,24 @@ freqs = foldl getAndInc Map.empty
   where
     getAndInc acc x = Map.insert x (1 + Map.findWithDefault 0 x acc) acc
 
-steps :: InsertionRules -> String -> Int -> String
+pairs :: String -> [(Char, Char)]
+pairs s = zip s (drop 1 s)
+
+combined :: [(Char, Char)] -> String
+combined [] = ""
+combined (p0 : pairs) = foldl (++) [fst p0] (map (\p -> [snd p]) (p0 : pairs))
+
+steps :: InsertionRules -> [(Char, Char)] -> Int -> [(Char, Char)]
 steps rules cs n = foldl (\acc _ -> step rules acc) cs [0 .. (n - 1)]
 
-step :: InsertionRules -> String -> String
-step rules cs = combined
-  where
-    combined = foldl1 (\acc cs -> acc ++ drop 1 cs) inserted
-    inserted = zipWith (curry (insertion rules)) cs (drop 1 cs)
+step :: InsertionRules -> [(Char, Char)] -> [(Char, Char)]
+step rules = concatMap (insertion rules)
 
-insertion :: InsertionRules -> (Char, Char) -> String
+insertion :: InsertionRules -> (Char, Char) -> [(Char, Char)]
 insertion rules (c1, c2) =
   case Map.lookup [c1, c2] rules of
-    Nothing -> [c1, c2]
-    Just c3 -> [c1, c3, c2]
+    Nothing -> [(c1, c2)]
+    Just c3 -> [(c1, c3), (c3, c2)]
 
 -- parsing
 

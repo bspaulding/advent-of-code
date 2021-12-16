@@ -1,6 +1,7 @@
 module DayFourteen (main) where
 
 import qualified Control.Monad as Monad
+import qualified Data.Bifunctor as Bifunctor
 import Data.List
 import qualified Data.Map as Map
 import Data.Ord
@@ -12,50 +13,52 @@ main input = case parseInput input of
   Left err -> print err
   Right conf -> do
     print conf
-    doStep conf 1
-    doStep conf 2
-    doStep conf 3
-    doStep conf 4
     doStep conf 10
+    doStep conf 40
 
 doStep :: Config -> Int -> IO ()
 doStep conf n = do
   let rules = insertionRules conf
-  let stepN = steps rules (pairs $ polymerTemplate conf) n
-  print stepN
-  let stepNCombined = combined stepN
-  putStrLn $ stepNCombined
-  let counts = Map.toList $ freqs stepNCombined
+  let template = polymerTemplate conf
+  let stepN = steps rules (pairs template) n
+  let counts = Map.toList $ foldl (Map.unionWith (+)) (Map.singleton (last template) 1) $ map (\(p, n) -> Map.singleton (fst p) n) stepN
+  putStrLn $ "counts = " ++ show counts
   let ((cmax, xmax), (cmin, xmin)) = (maximumBy (comparing snd) counts, minimumBy (comparing snd) counts)
   print ((cmax, xmax), (cmin, xmin))
   let diff = xmax - xmin
   putStrLn $ "difference at step " ++ show n ++ " = " ++ show diff
 
-freqs :: Ord a => [a] -> Map.Map a Int
-freqs = foldl getAndInc Map.empty
+freqsBy :: Ord b => (a -> b) -> [a] -> Map.Map b Int
+freqsBy f = foldl getAndInc Map.empty
   where
-    getAndInc acc x = Map.insert x (1 + Map.findWithDefault 0 x acc) acc
+    getAndInc acc x = Map.insert k (1 + Map.findWithDefault 0 k acc) acc
+      where
+        k = f x
 
-pairs :: String -> [(Char, Char)]
-pairs s = zip s (drop 1 s)
+pairs :: String -> [PairCount]
+pairs s = map (\p -> (p, 1)) ps
+  where
+    ps = zip s (drop 1 s)
 
-combined :: [(Char, Char)] -> String
-combined [] = ""
-combined (p0 : pairs) = foldl (++) [fst p0] (map (\p -> [snd p]) (p0 : pairs))
-
-steps :: InsertionRules -> [(Char, Char)] -> Int -> [(Char, Char)]
+steps :: InsertionRules -> [PairCount] -> Int -> [PairCount]
 steps rules cs n = foldl (\acc _ -> step rules acc) cs [0 .. (n - 1)]
 
-step :: InsertionRules -> [(Char, Char)] -> [(Char, Char)]
-step rules = concatMap (insertion rules)
+step :: InsertionRules -> [PairCount] -> [PairCount]
+step rules p0 = Map.toList $ foldl (Map.unionWith (+)) Map.empty $ map (uncurry Map.singleton) $ concatMap (insertion rules) p0
 
-insertion :: InsertionRules -> (Char, Char) -> [(Char, Char)]
-insertion rules (c1, c2) =
+insertion :: InsertionRules -> PairCount -> [PairCount]
+insertion rules ((c1, c2), nc) =
   case Map.lookup [c1, c2] rules of
-    Nothing -> [(c1, c2)]
-    Just c3 -> [(c1, c3), (c3, c2)]
+    Nothing -> [((c1, c2), nc)]
+    Just c3 -> [((c1, c3), nc), ((c3, c2), nc)]
 
 -- parsing
+
+type Pair = (Char, Char)
+
+type PairCount = (Pair, Int)
+
+type PairMap = Map.Map Pair Int
 
 type InsertionRules = Map.Map String Char
 

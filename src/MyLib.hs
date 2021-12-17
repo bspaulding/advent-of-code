@@ -2,6 +2,7 @@ module MyLib (main) where
 
 import qualified DayEight
 import qualified DayEleven
+import qualified DayFifteen
 import qualified DayFive
 import qualified DayFour
 import qualified DayFourteen
@@ -32,4 +33,5 @@ main day input = do
     "twelve" -> DayTwelve.main input
     "thirteen" -> DayThirteen.main input
     "fourteen" -> DayFourteen.main input
+    "fifteen" -> DayFifteen.main input
     _ -> putStrLn $ "Unknown day '" ++ day ++ " "

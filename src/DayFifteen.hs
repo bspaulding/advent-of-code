@@ -1,31 +1,54 @@
 module DayFifteen (main) where
 
-import Data.List as List
+import qualified Data.List as List
 import qualified Data.Map as Map
-import Data.Ord as Ord
+import qualified Data.PQueue.Prio.Min as PQ
+import qualified Data.Set as Set
 import qualified Data.Text as Text
 import System.Console.ANSI.Codes
 
 main :: String -> IO ()
 main input = do
-  let riskMap = map parseLine (lines input)
+  let smallMap = map parseLine (lines input)
+  let riskMap = genBigMap smallMap 5
   let goal = (length riskMap - 1, length (head riskMap) - 1)
-  let result = search goal (neighborsAndCostsOf riskMap) (manhattan goal) [((0, 0), 0, 0)] [] (Map.fromList [((0, 0), 0)]) Map.empty
+  let open = PQ.singleton 0 ((0, 0), 0)
+  let neighborCostsMap = neighborsAndCostsMap riskMap (costMap riskMap)
+  let hMap = foldl (\acc p -> Map.insert p (manhattan goal p) acc) Map.empty (coordsIn riskMap)
+  let result = search goal (flip (Map.findWithDefault []) neighborCostsMap) (flip (Map.findWithDefault 0) hMap) open Set.empty (Map.fromList [((0, 0), 0)]) Map.empty
   case result of
     Nothing -> putStrLn "No path found!"
     Just (cost, path) -> do
-      putStrLn $ prettyMap riskMap path
-      print result
-      print $ pathCost riskMap path
+      -- putStrLn $ prettyMap riskMap path
+      print cost
 
-neighborsAndCostsOf :: [[Int]] -> Point -> [(Point, Int)]
-neighborsAndCostsOf riskMap p = map (\p -> (p, getMapValue riskMap p)) (neighborCoordsOf riskMap p)
-
-neighborCoordsOf :: [[Int]] -> Point -> [Point]
-neighborCoordsOf g (y, x) = filter (inBounds height width) [(y - 1, x), (y, x - 1), (y + 1, x), (y, x + 1)]
+genBigMap :: [[Int]] -> Int -> [[Int]]
+genBigMap g n = chunks w' $ map bigMapValue coords
   where
-    height = length g
-    width = (length . head) g
+    h = length g
+    w = length (head g)
+    h' = h * n
+    w' = w * n
+
+    coords = [(y, x) | y <- [0 .. (h' - 1)], x <- [0 .. (w' - 1)]]
+
+    bigMapValue :: Point -> Int
+    bigMapValue (y, x) = if n > 9 then n `mod` 9 else n
+      where
+        n = (x `div` w) + (y `div` h) + getMapValue g (y `mod` h, x `mod` w)
+
+neighborsAndCostsMap :: [[Int]] -> CostMap -> Map.Map Point [(Point, Int)]
+neighborsAndCostsMap riskMap costMap =
+  foldl (\acc p -> Map.insert p (neighborsAndCostsOf riskMap costMap p) acc) Map.empty (coordsIn riskMap)
+
+neighborsAndCostsOf :: [[Int]] -> CostMap -> Point -> [(Point, Int)]
+neighborsAndCostsOf riskMap costMap p = map (\p -> (p, Map.findWithDefault 0 p costMap)) (neighborCoordsOf height width p)
+  where
+    height = length riskMap
+    width = (length . head) riskMap
+
+neighborCoordsOf :: Int -> Int -> Point -> [Point]
+neighborCoordsOf height width (y, x) = filter (inBounds height width) [(y - 1, x), (y, x - 1), (y + 1, x), (y, x + 1)]
 
 inBounds :: Int -> Int -> (Int, Int) -> Bool
 inBounds height width (y, x) = y >= 0 && x >= 0 && y < height && x < width
@@ -39,8 +62,8 @@ search ::
   a -> -- goal node
   (a -> [(a, Int)]) -> -- returns neighbors with costs
   (a -> Int) -> -- heuristic function, estimate cost toward goal
-  [(a, Int, Int)] -> -- open set (node, priority, gcost)
-  [a] -> -- visited/closed set
+  PQ.MinPQueue Int (a, Int) -> -- open set: priority (node, gcost)
+  Set.Set a -> -- visited/closed set
   Map.Map a Int -> -- gscores
   Map.Map a a -> -- backtracking
   Maybe (Int, [a]) -- result, nothing if no path can be found, or just the cost and the path as list of nodes
@@ -50,25 +73,34 @@ search goal neighbors h open closed gscores tracks
   -- if node is goal, then we found it!
   | node == goal = Just (gcost, buildPath tracks node)
   -- if node is seen already, discard and move on
-  | node `elem` closed = search goal neighbors h open' closed gscores tracks
+  | node `Set.member` closed = search goal neighbors h open' closed gscores tracks
   -- otherwise expand the search
   | otherwise = search goal neighbors h open'' closed' gscores' tracks'
   where
-    (node, priority, gcost) = minimumBy (comparing (\(_, x, _) -> x)) open
-    -- remove node from open
-    open' = filter ((/= node) . (\(x, _, _) -> x)) open
+    -- find and remove minimum node from open
+    ((priority, (node, gcost)), open') = PQ.deleteFindMin open
     -- add node to closed
-    closed' = node : closed
+    closed' = Set.insert node closed
     -- get successors with costs
     successors = map (\(a, g) -> (a, gcost + g, h a)) $ neighbors node
     -- filter successors that are not seen
-    successorsNotSeen = filter (\(a, gcost, hcost) -> a `notElem` closed' && (not (Map.member a gscores) || Map.findWithDefault (gcost + 1) a gscores > gcost)) successors
+    successorsNotSeen =
+      filter
+        ( \(a, gcost, hcost) ->
+            a `Set.notMember` closed'
+              && ( not (Map.member a gscores)
+                     || Map.findWithDefault gcost a gscores > gcost
+                 )
+        )
+        successors
     -- insert new successors into open
-    open'' = map (\(a, g, h) -> (a, g + h, g)) successorsNotSeen ++ open
+    open'' = List.foldl' folder open' successorsNotSeen
+    folder :: PQ.MinPQueue Int (a, Int) -> (a, Int, Int) -> PQ.MinPQueue Int (a, Int)
+    folder acc (a, g, h) = PQ.insert (g + h) (a, g) acc
     -- insert new successors into scores
-    gscores' = foldl (\gs (a, g, _) -> Map.insert a g gs) gscores successorsNotSeen
+    gscores' = List.foldl' (\gs (a, g, _) -> Map.insert a g gs) gscores successorsNotSeen
     -- insert new successors into tracks
-    tracks' = foldl (\ts (a, _, _) -> Map.insert a node ts) tracks successorsNotSeen
+    tracks' = List.foldl' (\ts (a, _, _) -> Map.insert a node ts) tracks successorsNotSeen
 
 buildPath :: Ord a => Map.Map a a -> a -> [a]
 buildPath tracks node =
@@ -76,23 +108,20 @@ buildPath tracks node =
     then buildPath tracks (Map.findWithDefault node node tracks) ++ [node]
     else [node]
 
-costMap :: [[Int]] -> Map.Map Point Int
+type CostMap = Map.Map Point Int
+
+costMap :: [[Int]] -> CostMap
 costMap riskMap = Map.fromList $ map (\(y, x) -> ((y, x), (riskMap !! y) !! x)) coords
   where
     height = length riskMap - 1
     width = length (head riskMap) - 1
     coords = [(y, x) | x <- [0 .. width], y <- [0 .. height]]
 
-pathCost :: [[Int]] -> [Point] -> Int
-pathCost riskMap path =
-  sum $ map (\(y, x) -> (riskMap !! y) !! x) (drop 1 path)
-
 manhattan :: Point -> Point -> Int
-manhattan (y1, x1) (y2, x2) = d * (dx + dy)
+manhattan (y1, x1) (y2, x2) = dx + dy
   where
     dx = abs (x1 - x2)
     dy = abs (y1 - y2)
-    d = 1
 
 type Point = (Int, Int)
 

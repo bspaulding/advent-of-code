@@ -9,13 +9,14 @@ main input = do
 
 printParsedPacket :: String -> ([Int], Packet, [Int]) -> String
 printParsedPacket line (binary, packet, remaining) =
-  List.intercalate "\n" [hex, binary', packet', remaining', sumOfVersions]
+  List.intercalate "\n" [hex, binary', packet', remaining', sumOfVersions, value]
   where
     hex = "hex = " ++ line
     binary' = "binary = " ++ concatMap show binary
     packet' = "packet = " ++ show packet
     remaining' = "remaining bits = " ++ concatMap show remaining
     sumOfVersions = "sum of versions = " ++ show (versionSum packet)
+    value = "value = " ++ show (evalPacket packet)
 
 parseLine :: String -> ([Int], Packet, [Int])
 parseLine l = (binary, packet, remaining)
@@ -25,11 +26,24 @@ parseLine l = (binary, packet, remaining)
 
 versionSum :: Packet -> Int
 versionSum (Packet v _ (Literal _)) = v
-versionSum (Packet v _ (Operator ps)) = v + sum (map versionSum ps)
+versionSum (Packet v _ (Operator _ ps)) = v + sum (map versionSum ps)
 
 data Packet = Packet {version :: Int, typeId :: Int, packetData :: PacketData} deriving (Show)
 
-data PacketData = Literal Int | Operator [Packet] deriving (Show)
+data PacketData = Literal Int | Operator Operation [Packet] deriving (Show)
+
+data Operation = Sum | Product | Minimum | Maximum | GreaterThan | LessThan | EqualTo | Unknown deriving (Show)
+
+evalPacket :: Packet -> Int
+evalPacket (Packet _ _ (Literal x)) = x
+evalPacket (Packet _ _ (Operator Sum ps)) = sum $ map evalPacket ps
+evalPacket (Packet _ _ (Operator Product ps)) = product $ map evalPacket ps
+evalPacket (Packet _ _ (Operator Minimum ps)) = minimum $ map evalPacket ps
+evalPacket (Packet _ _ (Operator Maximum ps)) = maximum $ map evalPacket ps
+evalPacket (Packet _ _ (Operator GreaterThan ps)) = if evalPacket (head ps) > evalPacket (ps !! 1) then 1 else 0
+evalPacket (Packet _ _ (Operator LessThan ps)) = if evalPacket (head ps) < evalPacket (ps !! 1) then 1 else 0
+evalPacket (Packet _ _ (Operator EqualTo ps)) = if evalPacket (head ps) == evalPacket (ps !! 1) then 1 else 0
+evalPacket (Packet _ _ (Operator Unknown ps)) = 0
 
 readPacket :: [Int] -> (Packet, [Int])
 readPacket binary = (packet, bitsLeft)
@@ -40,8 +54,9 @@ readPacket binary = (packet, bitsLeft)
     (packetData, bitsLeft) =
       if typeId == 4
         then readLiteral packetDataBits []
-        else readOperator packetDataBits
+        else applyFst (Operator op) $ readOperator packetDataBits
     packet = Packet {version = version, typeId = typeId, packetData = packetData}
+    op = operation typeId
 
 readPackets :: [Int] -> [Packet]
 readPackets [] = []
@@ -49,20 +64,30 @@ readPackets binary = packet : readPackets remaining
   where
     (packet, remaining) = readPacket binary
 
-readOperator :: [Int] -> (PacketData, [Int])
-readOperator [] = (Operator [], [])
-readOperator (0 : rest) = (Operator packets, remaining)
+operation :: Int -> Operation
+operation 0 = Sum
+operation 1 = Product
+operation 2 = Minimum
+operation 3 = Maximum
+operation 5 = GreaterThan
+operation 6 = LessThan
+operation 7 = EqualTo
+operation _ = Unknown
+
+readOperator :: [Int] -> ([Packet], [Int])
+readOperator [] = ([], [])
+readOperator (0 : rest) = (packets, remaining)
   where
     lengthBits = readBinary (take 15 rest)
     remaining = drop (15 + lengthBits) rest
     packetsData = take lengthBits (drop 15 rest)
     packets = readPackets packetsData
-readOperator (1 : rest) = (Operator packets, remaining)
+readOperator (1 : rest) = (packets, remaining)
   where
     lengthPackets = readBinary (take 11 rest)
     packetsData = drop 11 rest
     (packets, remaining) = foldl (\(acc, bits) i -> applyFst (\p -> acc ++ [p]) (readPacket bits)) ([], packetsData) [0 .. (lengthPackets - 1)]
-readOperator (_ : rest) = (Operator [], [])
+readOperator (_ : rest) = ([], [])
 
 applyFst :: (a -> c) -> (a, b) -> (c, b)
 applyFst f (a, b) = (f a, b)

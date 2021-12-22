@@ -31,7 +31,7 @@ library
     exposed-modules:  MyLib
 
     -- Modules included in this library but not exported.
-    other-modules: Utilities, DayOne, DayTwo, DayThree, DayFour, DayFive, DaySix, DaySeven, DayEight, DayNine, DayTen, DayEleven, DayTwelve, DayThirteen, DayFourteen, DayFifteen, DaySixteen
+    other-modules: Utilities, DayOne, DayTwo, DayThree, DayFour, DayFive, DaySix, DaySeven, DayEight, DayNine, DayTen, DayEleven, DayTwelve, DayThirteen, DayFourteen, DayFifteen, DaySixteen, DaySeventeen
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:

@@ -73,12 +73,22 @@ def move_for_result(them, target_result):
 def map_target_result(t):
     return {'X': 'LOSE', 'Y': 'DRAW', 'Z': 'WIN'}[t]
 
-def score_round(them, target_result):
+def score_round_p2(them, target_result):
     you = move_for_result(them, map_target_result(target_result))
     return result_score(result(them, you)) + move_score(you)
 
-scores = [score_round(mapping[a], b) for (a, b) in guide]
+def score_round_p1(them, you):
+    return result_score(result(them, mapping[you])) + move_score(mapping[you])
 
-print(f"scores = {scores}")
-print(f"total score = {sum(scores)}")
+scores_p1 = [score_round_p1(mapping[a], b) for (a, b) in guide]
+
+print(f"part one")
+# print(f"scores = {scores_p1}")
+print(f"total score = {sum(scores_p1)}")
+
+scores_p2 = [score_round_p2(mapping[a], b) for (a, b) in guide]
+
+print("part two")
+# print(f"scores = {scores_p2}")
+print(f"total score = {sum(scores_p2)}")
 

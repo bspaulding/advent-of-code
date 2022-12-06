@@ -11,17 +11,24 @@ main = do
     Nothing -> return ()
     Just input -> do
       let inLines = filter (not .null) $ lines input
-      let results = map (findStartPacket 0) $ inLines
-      putStrLn $ "Day 6\n" <> intercalate "\n" (map show (zip inLines results))
+      putStrLn "Day 6"
 
-findStartPacket :: Int -> [Char] -> Int
-findStartPacket i cs =
+      putStrLn "\nStart of Packet Markers (part one)"
+      let startOfPacketMarker = map (findMarker 4 0) $ inLines
+      putStrLn $ intercalate "\n" (map show (zip inLines startOfPacketMarker))
+
+      putStrLn "\nStart of Message Markers (part two)"
+      let startOfMessageMarker = map (findMarker 14 0) $ inLines
+      putStrLn $ intercalate "\n" (map show (zip inLines startOfMessageMarker))
+
+findMarker :: Int -> Int -> [Char] -> Int
+findMarker l i cs =
   if isStartPacket
-     then i + 4
+     then i + l
      -- we could run out of bounds forever here if we hit the end
-     else findStartPacket (i + 1) (tail cs)
+     else findMarker l (i + 1) (tail cs)
   where
-    packet = take 4 cs
+    packet = take l cs
     packetCounts = countItems packet
     isStartPacket = all (== 1) (Map.elems packetCounts)
 

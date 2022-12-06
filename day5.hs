@@ -81,4 +81,5 @@ evalMove cols (Move { n, from, to }) =
   Map.adjust (moved ++) to $
   Map.adjust (drop n) from cols
   where
-    moved = reverse $ take n $ Map.findWithDefault [] from cols
+    -- reverse this for part one behavior
+    moved = take n $ Map.findWithDefault [] from cols

@@ -22,17 +22,17 @@ print(dupes)
 
 dps = [priorities[d] for d in dupes]
 
-print(dps)
+# print(dps)
 
-print(sum(dps))
+print(f"part one = {sum(dps)}")
 
 groups = [lines[x*3:(x*3)+3] for x in range(0, int(len(lines)/3))]
 
-print(groups)
+# print(groups)
 
 gps = [set(group[0]).intersection(set(group[1])).intersection(set(group[2])).pop()
         for group in groups]
 
-print(gps)
+# print(gps)
 
-print(sum([priorities[p] for p in gps]))
+print(f"part two = {sum([priorities[p] for p in gps])}")

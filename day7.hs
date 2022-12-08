@@ -4,6 +4,9 @@ import Data.Char (isSpace)
 import qualified Data.List as List
 import System.Environment (getArgs)
 
+totalSpace = 70000000
+spaceNeeded = 30000000
+
 main :: IO ()
 main = do
   input <- getPuzzleInput
@@ -18,9 +21,19 @@ main = do
       -- putStrLn $ unlines $ map (\(cmd, s) -> show cmd <> "\n" <> show s <> "\n" <> printTreeCursor s) (zip parsed (tail fs))
       let fs = foldl evalTermOutLine emptyFileTreeCursor parsed
       putStrLn $ printTreeCursor fs
+      -- part one
       let sizes = getDirSizes (tree fs)
       print sizes
       print $ sum $ filter (< 100000) sizes
+
+      -- part two
+      let totalUnused = totalSpace - (treeSize (tree fs))
+      putStrLn $ "totalUnused = " <> show totalUnused
+      let spaceToDelete = spaceNeeded - totalUnused
+      putStrLn $ "spaceToDelete = " <> show spaceToDelete
+      let eligibleDirSizes = List.sort $ filter (>= spaceToDelete) sizes
+      putStrLn $ "eligibleDirSizes = " <> show eligibleDirSizes
+
       return ()
 
 getDirSizes :: FileTree -> [Int]

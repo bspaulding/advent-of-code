@@ -15,50 +15,79 @@ gameIsPossible = \{ sets } -> List.all sets setIsPossible
 
 parseGameId = \line ->
     Str.splitFirst line ":"
-    |> Result.withDefault { before: "", after: ""}
+    |> Result.withDefault { before: "", after: "" }
     |> .before
     |> Str.splitFirst " "
-    |> Result.withDefault { before: "", after: ""}
+    |> Result.withDefault { before: "", after: "" }
     |> .after
     |> Str.toU32
     |> Result.withDefault 0
-addColorCount = \counts, countStr -> 
-    tokens = Str.splitFirst countStr " " 
+addColorCount = \counts, countStr ->
+    tokens =
+        Str.splitFirst countStr " "
         |> Result.withDefault { before: "0", after: "blue" }
-    n = Str.toU32 tokens.before
+    n =
+        Str.toU32 tokens.before
         |> Result.withDefault 0
     when tokens.after is
         "blue" -> { counts & blue: n }
         "red" -> { counts & red: n }
         "green" -> { counts & green: n }
         _ -> counts
-parseGameSet = \setStr -> 
+parseGameSet = \setStr ->
     Str.split setStr ","
     |> List.map Str.trim
-    |> List.walk {red: 0, blue: 0, green: 0} addColorCount
+    |> List.walk { red: 0, blue: 0, green: 0 } addColorCount
 parseGameSets = \line ->
     Str.splitFirst line ":"
-    |> Result.withDefault { before: "", after: ""}
+    |> Result.withDefault { before: "", after: "" }
     |> .after
     |> Str.split ";"
     |> List.map parseGameSet
 parseGame = \line -> { id: parseGameId line, sets: parseGameSets line }
 
-task = 
+maxSet = \{ id, sets } -> {
+    id,
+    maxSet: sets
+    |> List.walk { red: 0, blue: 0, green: 0 } (\{ red: r1, blue: b1, green: g1 }, { red: r2, blue: b2, green: g2 } -> { red: Num.max r1 r2, blue: Num.max b1 b2, green: Num.max g1 g2 }),
+}
+
+task =
     contents <- File.readUtf8 (Path.fromStr fileName) |> await
-    lines = Str.split contents "\n"
+    lines =
+        Str.split contents "\n"
         |> List.dropIf Str.isEmpty
     games = List.map lines parseGame
-    dbg games
+    dbg
+        games
+
     possibleGames = List.keepIf games gameIsPossible
-    dbg possibleGames
     possibleGameIds = List.map possibleGames .id
-    dbg possibleGameIds
+    dbg
+        possibleGameIds
+
     sumPossibleIds = List.walk possibleGameIds 0 Num.add
-    dbg sumPossibleIds
+    dbg
+        SumPossibleIds sumPossibleIds
+
+    maxSets = List.map games maxSet
+    dbg
+        MaxSets maxSets
+
+    powers =
+        maxSets
+        |> List.map .maxSet
+        |> List.map (\{ red, green, blue } -> red * green * blue)
+    dbg
+        powers
+
+    sumOfPowers = List.walk powers 0 Num.add
+    dbg
+        SumOfPowers sumOfPowers
+
     Stdout.line "Done."
 
-main = 
+main =
     result <- Task.attempt task
     when result is
         Ok {} -> Task.ok {}

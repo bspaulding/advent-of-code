@@ -1,0 +1,7 @@
+{
+    "workbench.colorTheme": "In Bed by 7pm",
+    "editor.fontSize": 18,
+    "editor.formatOnSave": true,
+    "roc-lang.language-server.exe": "/home/codespace/bin/roc_ls",
+    "terminal.integrated.fontSize": 18
+}

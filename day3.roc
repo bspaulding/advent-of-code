@@ -3,17 +3,25 @@ app "day3"
     imports [pf.Stderr, pf.Stdout, pf.File, pf.Path, pf.Task.{ Task, await }]
     provides [main] to pf
 
-fileName = "day3.test.txt"
+fileName = "day3.input.txt"
 
-parseNextChar = \{currentWord, items}, c, x, y -> 
+insertCurrentWord = \{currentWord, items}, x, y ->
+    { currentWord: []
+    , items: Dict.insert items (Point (x - (List.len currentWord)) y) (PartNumber (Str.joinWith currentWord ""))}
+parseNextChar = \{currentWord, items}, c, x, y, width -> 
     when c is
         "." ->
             if currentWord != [] then
-                {currentWord: [], items: Dict.insert items (Point (x - (List.len currentWord)) y) (PartNumber (Str.joinWith currentWord ""))}
+                insertCurrentWord {currentWord, items} x y
             else
                 {currentWord: [], items}
         "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" -> 
-            {currentWord: List.append currentWord c, items}
+            newState = {currentWord: List.append currentWord c, items}
+            # if we are at the end of the line, insert the current word
+            if x == width - 1 then
+               insertCurrentWord newState (x + 1) y 
+            else
+               newState
         _ -> if currentWord != [] then
             {currentWord: [], items: Dict.insert items (Point x y) (Symbol c)
                                     |> Dict.insert (Point (x - (List.len currentWord)) y) (PartNumber (Str.joinWith currentWord ""))}
@@ -24,7 +32,7 @@ parseNextChar = \{currentWord, items}, c, x, y ->
 parseLine = \{ items }, line, y ->
     line
     |> Str.graphemes
-    |> List.walkWithIndex { currentWord: [], items } (\s, c, x -> parseNextChar s c x y)
+    |> List.walkWithIndex { currentWord: [], items } (\s, c, x -> parseNextChar s c x y (strLen line))
 
 adjacentAnySymbol = \items, (Point x y), pn -> 
     pnLen = List.len (Str.graphemes pn)
@@ -72,22 +80,22 @@ task =
 strLen = \str -> str |> Str.graphemes |> List.len
 
 redraw = \input, items -> 
-    maxY = List.len input
-    maxX = input |> List.first |> Result.withDefault "" |> Str.graphemes |> List.len
-    dbg MapSize maxX maxY
-    fullItems = Dict.walk items items (\state, (Point x y), v ->
+    maxY = List.len input - 1
+    maxX = (input |> List.first |> Result.withDefault "" |> strLen) - 1
+    fullItems = Dict.walk items (Dict.empty {}) (\state, (Point x y), v ->
         when v is 
-            PartNumber pn -> List.range { start: At x, end: At (strLen pn - 1)}
-                |> List.walk items (\state, p, v -> )
+            PartNumber pn -> pn
+                |> Str.graphemes
+                |> List.walkWithIndex state (\s1, c, i -> Dict.insert s1 (Point (x + i) y) c)
+            Symbol s -> Dict.insert state (Point x y) s
+            _ -> state
     )
     drawLine = \y ->
         List.range { start: At 0, end: At maxX }
         |> List.map (\x -> 
                 value = when Dict.get fullItems (Point x y) is
-                    Ok (Symbol s) -> s
-                    Ok (PartNumber pn) -> pn
+                    Ok s -> s
                     Err KeyNotFound -> "."
-                dbg Point x y Value value
                 value
             )
         |> Str.joinWith ""

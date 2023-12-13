@@ -8,24 +8,24 @@ fileName = "day3.input.txt"
 insertCurrentWord = \{currentWord, items}, x, y ->
     { currentWord: []
     , items: Dict.insert items (Point (x - (List.len currentWord)) y) (PartNumber (Str.joinWith currentWord ""))}
-parseNextChar = \{currentWord, items}, c, x, y, width -> 
+parseNextChar = \{currentWord, items}, c, x, y, width ->
     when c is
         "." ->
             if currentWord != [] then
                 insertCurrentWord {currentWord, items} x y
             else
                 {currentWord: [], items}
-        "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" -> 
+        "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ->
             newState = {currentWord: List.append currentWord c, items}
             # if we are at the end of the line, insert the current word
             if x == width - 1 then
-               insertCurrentWord newState (x + 1) y 
+               insertCurrentWord newState (x + 1) y
             else
                newState
         _ -> if currentWord != [] then
             {currentWord: [], items: Dict.insert items (Point x y) (Symbol c)
                                     |> Dict.insert (Point (x - (List.len currentWord)) y) (PartNumber (Str.joinWith currentWord ""))}
-            else 
+            else
             {currentWord: [], items: Dict.insert items (Point x y) (Symbol c)}
 
 
@@ -34,15 +34,15 @@ parseLine = \{ items }, line, y ->
     |> Str.graphemes
     |> List.walkWithIndex { currentWord: [], items } (\s, c, x -> parseNextChar s c x y (strLen line))
 
-adjacentAnySymbol = \items, (Point x y), pn -> 
+adjacentAnySymbol = \items, (Point x y), pn ->
     pnLen = List.len (Str.graphemes pn)
     startX = if x == 0 then 0 else x - 1
     startY = if y == 0 then 0 else y - 1
-    pointsToCheck = List.range { start: At startX, end: At (x + 1 + pnLen)}
+    pointsToCheck = List.range { start: At startX, end: At (x + pnLen)}
         |> List.joinMap (\x1 -> List.range { start: At startY, end: At (y + 1) }
                                 |> List.map (\y1 -> Point x1 y1))
     # dbg PointsToCheck (Point x y) (PartNumber pn) pointsToCheck
-    isSymbol = \p -> 
+    isSymbol = \p ->
         when Dict.get items p is
             Ok (Symbol _) -> Bool.true
             _ -> Bool.false
@@ -59,7 +59,7 @@ task =
         List.walkWithIndex lines { currentWord: [], items: Dict.empty {} } parseLine
         |> .items
 
-    dbg 
+    dbg
         Items items
 
     filterPartNumbers = \pns, point, item ->
@@ -75,15 +75,16 @@ task =
     sum = List.walk parsedNumbers 0 Num.add
     dbg Sum sum
 
-    Stdout.line (redraw lines items)
+    # Stdout.line (redraw lines items)
+    Stdout.line "Done."
 
 strLen = \str -> str |> Str.graphemes |> List.len
 
-redraw = \input, items -> 
+redraw = \input, items ->
     maxY = List.len input - 1
     maxX = (input |> List.first |> Result.withDefault "" |> strLen) - 1
     fullItems = Dict.walk items (Dict.empty {}) (\state, (Point x y), v ->
-        when v is 
+        when v is
             PartNumber pn -> pn
                 |> Str.graphemes
                 |> List.walkWithIndex state (\s1, c, i -> Dict.insert s1 (Point (x + i) y) c)
@@ -92,7 +93,7 @@ redraw = \input, items ->
     )
     drawLine = \y ->
         List.range { start: At 0, end: At maxX }
-        |> List.map (\x -> 
+        |> List.map (\x ->
                 value = when Dict.get fullItems (Point x y) is
                     Ok s -> s
                     Err KeyNotFound -> "."
@@ -102,7 +103,7 @@ redraw = \input, items ->
     lines = List.range { start: At 0, end: At maxY }
         |> List.map drawLine
         |> Str.joinWith "\n"
-    
+
     lines
 
 main =
